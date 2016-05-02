@@ -21,6 +21,14 @@ app.get('/movies/count', function(req, resp){
       })
 });
 
-app.listen(3000, function(){
-  console.log('server started');
-});
+// perform mandatory initialization
+// which at this moment involves the db init().
+db.init()
+    .then(function(result){
+      app.listen(3000, function(){
+        console.log('server started');
+      });
+    }, function(err){
+      console.log('unable to start the server as mandatory init failed.');
+      console.log(err);
+    });
