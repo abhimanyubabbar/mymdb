@@ -1,10 +1,34 @@
 var express = require('express');
+var bodyParser = require('body-parser');
+var db = require('./models/database');
+
+
 var app = express();
 
-var db = require('./models/database');
+// Middleware.
+app.use(bodyParser.urlencoded({extended:false}));
+app.use(bodyParser.json());
+
+
+// Expose the API.
 
 app.get('/ping', function(req, resp){
   resp.send('{"application":"mymdb", "status":"pong"}');
+});
+
+app.post('/movies', function(req, resp){
+  console.log('received a call to add a new movie in the system.');
+  var movie = {
+    title: req.body.title,
+    year: req.body.year
+  };
+  db.addMovie(movie)
+      .then(function(result){
+        console.log('movie added successfully');
+        resp.send('movie added successfully.')
+      }, function(err){
+        console.log('woops .. ');
+      });
 });
 
 app.get('/movies/count', function(req, resp){

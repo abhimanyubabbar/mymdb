@@ -16,14 +16,47 @@ var movieSchema = [
     "CREATE UNIQUE INDEX movie_year_unique ON movies(" +
     "title, " +
     "year" +
+    ")",
+
+    "CREATE INDEX idx_years ON movies(" +
+    "year" +
     ")"
 ];
 
+/**
+ * Add a new movie information
+ * to the database.
+ * @param movie
+ */
+function addMovie(movie) {
 
-var db = {
-  movieCount : movieCount,
-  init : init
-};
+  var deferred = Q.defer();
+  var statement = 'INSERT INTO movies(title, year) VALUES ($1, $2)';
+
+  pg.connect(connectionString, function(err, client, done){
+    if (err){
+      deferred.reject(new Error(err));
+      return console.log("unable to add a new movie");
+    }
+
+    client.query(statement, [movie.title, movie.year], _insertResponse);
+
+    function _insertResponse(err, result){
+
+      done();
+
+      if (err){
+        deferred.reject(new Error(err));
+      }
+
+      console.log(result);
+      deferred.resolve('entry added');
+    }
+
+  });
+
+  return deferred.promise;
+}
 
 /**
  * Initialize the database schema in
@@ -121,6 +154,12 @@ function movieCount(){
 
   return deferred.promise;
 }
+
+var db = {
+  movieCount : movieCount,
+  addMovie: addMovie,
+  init : init
+};
 
 // export the main db interface
 // to be used by the front application.

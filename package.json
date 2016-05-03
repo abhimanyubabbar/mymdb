@@ -9,7 +9,8 @@
   "dependencies":{
     "express":"4.13.4",
     "pg":"4.5.5",
-    "q": "1.4.1"
+    "q": "1.4.1",
+    "body-parser":"1.15.0"
   },
   "repository": {
     "type": "git",
