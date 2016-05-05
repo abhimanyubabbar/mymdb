@@ -10,7 +10,9 @@ var movieSchema = [
     "CREATE TABLE IF NOT EXISTS movies(" +
     "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), " +
     "title TEXT NOT NULL, " +
-    "year INTEGER" +
+    "year INTEGER," +
+    "create_time TIMESTAMPTZ," +
+    "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
 
     "CREATE UNIQUE INDEX movies_title_year_unique ON movies(" +
@@ -37,7 +39,7 @@ var movieSchema = [
 function addMovie(movie) {
 
   var deferred = Q.defer();
-  var statement = 'INSERT INTO movies(title, year) VALUES ($1, $2)';
+  var statement = 'INSERT INTO movies(title, year, create_time) VALUES ($1, $2, now())';
 
   pg.connect(connectionString, function(err, client, done){
     if (err){
