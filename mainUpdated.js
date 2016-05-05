@@ -7,7 +7,7 @@ var helper = require('./util/util');
 var app = express();
 
 // Middleware.
-app.use(bodyParser.urlencoded({extended:false}));
+//app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 
 
@@ -20,20 +20,20 @@ app.get('/ping', function(req, resp){
 });
 
 app.post('/movies', function(req, resp){
-
   console.log('received a call to add a new movie in the system.');
+  console.log(req.body);
+
   var movie = {
     title: req.body.title,
     year: req.body.year
   };
+  console.log(movie);
 
   db.addMovie(movie)
-
       .then(function(result){
         resp.send('movie added successfully.')
       })
       .catch(function(err){
-        resp.send('unable to add the movie in system');
         console.log('woops .. ');
       });
 });
@@ -52,19 +52,18 @@ app.get('/movies/count', function(req, resp){
       })
 });
 
-(function(location){
+
+(function(){
 
   console.log('started with initializing the database.');
   db.init()
       .then(function(){
-        console.log('database up, initializing the datastore now ..');
-        return helper.initDataStore(location)
+        app.listen(3000)
+            .then(function(){
+              console.log('server started')
+            })
+
       })
-      .then(function(){
-        console.log('data store initialized, creating server now ..');
-        app.listen(3000, function(){console.log('server booted up.')});
-      })
-      .catch(function(){
-        console.log('unable to initialize thd database.');
-      })
-})('./resources/movies-extract.list');
+
+})();
+

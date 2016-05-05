@@ -9,18 +9,24 @@ var movieSchema = [
 
     "CREATE TABLE IF NOT EXISTS movies(" +
     "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), " +
-    "title TEXT, " +
+    "title TEXT NOT NULL, " +
     "year INTEGER" +
     ")",
 
-    "CREATE UNIQUE INDEX movie_year_unique ON movies(" +
+    "CREATE UNIQUE INDEX movies_title_year_unique ON movies(" +
     "title, " +
     "year" +
     ")",
 
     "CREATE INDEX idx_years ON movies(" +
     "year" +
-    ")"
+    ")",
+
+    "CREATE UNIQUE INDEX movies_title_unique ON movies(" +
+    "title" +
+    ")" +
+    "WHERE year IS NULL"
+
 ];
 
 /**
@@ -35,22 +41,28 @@ function addMovie(movie) {
 
   pg.connect(connectionString, function(err, client, done){
     if (err){
+      console.log('unable to create connection to the database.');
+      console.log(err);
       deferred.reject(new Error(err));
-      return console.log("unable to add a new movie");
+      return;
     }
 
     client.query(statement, [movie.title, movie.year], _insertResponse);
 
     function _insertResponse(err, result){
-
       done();
 
       if (err){
-        deferred.reject(new Error(err));
+        // allow unique constraint violations.
+        // during re-adding of data, it is allowed.
+        if (err.toString().indexOf('unique constraint') == -1) {
+          console.log('unable to add a new movie: ' + err.toString());
+          deferred.reject(new Error(err));
+          return;
+        }
       }
 
-      console.log(result);
-      deferred.resolve('entry added');
+      deferred.resolve('movie added successfully.');
     }
 
   });
