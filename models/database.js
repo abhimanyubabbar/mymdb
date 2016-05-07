@@ -4,6 +4,9 @@
   var Q = require('q');
   var connectionString = "postgres://postgres:postgres@localhost/mymdb";
 
+  var bunyan = require('bunyan');
+  var logger = bunyan.createLogger({name:"db"});
+
 
   var movieSchema = [
     "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"",
@@ -43,8 +46,9 @@
     pg.connect(connectionString, function (err, client, done) {
 
       if (err) {
-        deferred.reject(new Error(err));
-        return console.log('unable to connect to the database');
+        deferred.reject(err);
+        logger.log({err: err},'unable to connect to the database');
+        return;
       }
 
       var length = movieSchema.length;
@@ -70,8 +74,8 @@
 
         if (err) {
           if (err.toString().indexOf('already exists') == -1) {
-            error = new Error(err);
-            console.log('unable to successfully execute statement');
+            error = err;
+            logger.error({err : err},'unable to successfully execute statement');
           }
         }
 
@@ -94,54 +98,10 @@
   }
 
   /**
-   * Add a new movie information
-   * to the database.
-   * @param movie
-   */
-  function addMovie(movie) {
-
-    var deferred = Q.defer();
-    var statement = 'INSERT INTO movies(title, year, create_time) VALUES ($1, $2, now())';
-
-    pg.connect(connectionString, function (err, client, done) {
-
-      if (err) {
-        console.log('unable to create connection to the database.');
-        console.log(err);
-        deferred.reject(new Error(err));
-        return;
-      }
-
-      client.query({name: "insert_movie", text: statement, values: [movie.title, movie.year]}, _insertResponse);
-
-      function _insertResponse(err, result) {
-
-        done();
-
-        if (err) {
-          // allow unique constraint violations.
-          // during re-adding of data, it is allowed.
-          if (err.toString().indexOf('unique constraint') == -1) {
-            console.log('unable to add a new movie: ' + err.toString());
-            deferred.reject(new Error(err));
-            return;
-          }
-
-        }
-        deferred.resolve('movie added successfully.');
-      }
-    });
-
-    return deferred.promise;
-  }
-
-
-  /**
    * Add a batch of movies in the system.
    * At this moment, we are using prepared statement
    * to improve the execution efficiency.
    *
-   * FIXME : Move the implementation to a batch commit.
    * @param movies
    * @returns {*|promise}
    */
@@ -155,7 +115,7 @@
 
     var rollback = function(client, done) {
 
-      console.log('an exception occurred, ' +
+      logger.error('an exception occurred, ' +
           'will be rolling back the transaction.');
 
       client.query('ROLLBACK', function(err){
@@ -167,11 +127,11 @@
     pg.connect(connectionString, function(err, client, done){
 
       if (err) {
-        console.log('unable to create connection to the database.');
+        logger.error({err:err},'unable to create connection to the database.');
         return deferred.reject(err);
       }
 
-      console.log('going to begin the transaction');
+      logger.debug('going to begin the transaction');
 
       client.query('BEGIN', function(err){
         if(err) return rollback(client, done);
@@ -191,7 +151,7 @@
 
             if(err.toString().indexOf('unique constraint') == -1) {
 
-              console.log(err);
+              logger.error({err:err.toString()});
 
               // mark that an issue
               // has occurred which would prevent
@@ -259,7 +219,6 @@
   // to be used by the front application.
   module.exports = {
     movieCount: movieCount,
-    addMovie: addMovie,
     addMovies: addMovies,
     init: init
   };

@@ -1,13 +1,13 @@
 (function(){
 
-  // TODO : Create a component name and
-  // TODO : use it in logging. Also get good logger.
-
   'use strict';
 
   var db = require('../models/database');
   var file = require('../models/fileProcess');
   var Q = require('q');
+
+  var bunyan = require('bunyan');
+  var logger = bunyan.createLogger({name:"util"});
 
   // back-pressure.
   var bufferCount = 5000;
@@ -46,7 +46,7 @@
      * @private
      */
     function _closeHandler(){
-      console.log('remaining count' + buffer.length);
+      logger.debug('remaining count' + buffer.length);
       return deferred.resolve('data load complete');
     }
 
@@ -64,14 +64,14 @@
 
         if (!dataPushed) {
 
-          console.log('buffering complete, going to add new movies now.');
+          logger.debug('buffering complete, going to add new movies now.');
 
           // pause the stream for
           // any more data updates.
           readStream.pause();
           dataPushed = true;
 
-          console.log('paused the stream now, might get some events in between.');
+          logger.debug('paused the stream now, might get some events in between.');
 
           // add the information in the
           // application.
@@ -79,14 +79,14 @@
               .then(function(){
                 // once current batch goes through,
                 // be ready to receive and push more data.
-                console.log('add movie batch successful, resuming the stream.');
+                logger.debug('add movie batch successful, resuming the stream.');
                 readStream.resume();
                 dataPushed = false;
               })
               .catch(function(err){
                 // fail in case any element in
                 // batch fails.
-                console.log('movie batch addition failed, error: ' + err.toString());
+                logger.error({err:err.toString()}, 'movie batch addition failed, error');
                 _errorHandler(err);
 
               });
@@ -96,21 +96,6 @@
       } else {
         buffer.push(data);
       }
-    }
-
-    /**
-     * _loadDataHandler : Load the information passed
-     * in to the data store exposed by db.
-     *
-     * @param obj
-     * @private
-     */
-    function _loadDataHandler(obj){
-
-      db.addMovie(obj)
-          .catch(function(err){
-            _errorHandler(err);
-          });
     }
 
     return deferred.promise;
