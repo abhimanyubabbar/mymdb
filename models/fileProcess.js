@@ -18,7 +18,6 @@
   // create a prototypical link between the two.
   util.inherits(MyReadStreamEmitter, EventEmitter);
 
-
   /**
    * Create a read stream which provides
    * object to be used by application.
@@ -28,8 +27,6 @@
    */
   function createObjectReadStream(location){
 
-    var emitter = new MyReadStreamEmitter();
-
     var linereader = readline.createInterface({
       input: fs.createReadStream(location, {
         flags: 'r',
@@ -38,10 +35,44 @@
       })
     });
 
+    // API Expose BackPressure.
+    MyReadStreamEmitter.prototype.pause = function(){
+      console.log('request to pause the stream.');
+      linereader.pause();
+    };
+
+    MyReadStreamEmitter.prototype.resume = function(){
+      console.log('request to resume the stream.');
+      linereader.resume();
+    };
+
+    var emitter = new MyReadStreamEmitter();
+
+    // Basic EventListeners on line reader.
     linereader.on('line', _readLine);
 
-    function _readLine(line){
+    // error event listener.
+    linereader.on('error', function(error){
+      console.log('unable to process the raw file stream.');
+      linereader.removeListener('line', _readLine);
+      emitter.emit('error', error)
+    });
 
+    // close event listener.
+    linereader.on('close', function() {
+      console.log('closing the stream');
+      emitter.emit('close');
+    });
+
+    /**
+     * _readLine : captures the data from the downstream
+     * and emits the information to the application after
+     * filtering.
+     *
+     * @param line
+     * @private
+     */
+    function _readLine(line){
       var data = _dataFiltering(_normalize(line));
       if (data != null) {
         // emit data to the reading application.
@@ -49,37 +80,35 @@
       }
     }
 
-    function _dataFiltering(data){
-
-      if (data == null) {
-        return null;
-      }
-
-      var title = data[0];
-      var year = data[1];
-
-      if ( year == '') {
-        year = null
-      } else {
-        year = parseInt(year);
-      }
-      return [title, year];
-    }
-
-    linereader.on('error', function(error){
-      console.log('unable to process the raw file stream.');
-      // remove any listeners and emit an error event upstream.
-      linereader.removeListener('line', _readLine);
-      emitter.emit('error', error)
-    });
-
-    linereader.on('close', function() {
-      console.log('closing the stream');
-      emitter.emit('close');
-    });
-
     return emitter;
   }
+
+  /**
+   * Basic data filtering before
+   * the information could be forwarded
+   * to the application.
+   *
+   * @param data
+   * @returns {*}
+   * @private
+   */
+  function _dataFiltering(data){
+
+    if (data == null) {
+      return null;
+    }
+
+    var title = data[0];
+    var year = data[1];
+
+    if ( year == '') {
+      year = null
+    } else {
+      year = parseInt(year);
+    }
+    return [title.trim(), year];
+  }
+
 
   /**
    * Process the data list in the file.
@@ -186,4 +215,4 @@
     processList : processList,
     createObjectReadStream : createObjectReadStream
   };
-})()
+})();
