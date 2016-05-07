@@ -6,6 +6,8 @@
   var util = require('util');
   var EventEmitter = require('events');
 
+  var bunyan = require('bunyan');
+  var logger = bunyan.createLogger({name:"file-stream"});
 
   // My own stream emitter.
   // There doesn't seem to be any explicit purpose
@@ -37,12 +39,12 @@
 
     // API Expose BackPressure.
     MyReadStreamEmitter.prototype.pause = function(){
-      console.log('request to pause the stream.');
+      logger.info('request to pause the stream.');
       linereader.pause();
     };
 
     MyReadStreamEmitter.prototype.resume = function(){
-      console.log('request to resume the stream.');
+      logger.info('request to resume the stream.');
       linereader.resume();
     };
 
@@ -53,14 +55,17 @@
 
     // error event listener.
     linereader.on('error', function(error){
-      console.log('unable to process the raw file stream.');
+
+      logger.error({err: error},'unable to process the raw file stream.');
       linereader.removeListener('line', _readLine);
+      // inform the listeners about
+      // the same.
       emitter.emit('error', error)
     });
 
     // close event listener.
     linereader.on('close', function() {
-      console.log('closing the stream');
+      logger.info('closing the stream');
       emitter.emit('close');
     });
 
@@ -128,7 +133,7 @@
     });
 
     writable.on('error', function(error) {
-      console.log(error);
+      logger.error(error);
     });
 
     var linereader = readline.createInterface({
@@ -149,13 +154,13 @@
         }
       }
       if (line.indexOf('========') >= 0) {
-        console.log('Start processing the records');
+        logger.debug('Start processing the records');
         start_processing = true;
       }
     });
 
     linereader.on('close', function() {
-      console.log('closing the stream');
+      logger.debug('closing the stream');
     });
 
   }
@@ -184,7 +189,7 @@
     // stop processing in case we have not
     // enough elements in the
     if(row.length < 2){
-      console.log("Not enough arguments.");
+      logger.trace("Not enough arguments.");
       return null;
     }
 
