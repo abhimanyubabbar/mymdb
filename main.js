@@ -67,4 +67,4 @@ app.get('/movies/count', function(req, resp){
       .catch(function(){
         console.log('unable to initialize thd database.');
       })
-})('./resources/movies-extract.list');
+})('./resources/movies-copy.list');

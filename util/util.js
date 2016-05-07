@@ -42,7 +42,6 @@
      * @private
      */
     function _closeHandler(){
-      console.log('@@@@@@@@ Why Is this Getting Executed ... ?');
       deferred.resolve('data load complete');
     }
 
