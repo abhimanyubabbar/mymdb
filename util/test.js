@@ -11,33 +11,13 @@
   var rs = fs.createReadStream('../resources/movies-extract.list',
      {encoding: 'utf-8'});
 
-  /**
-  var Readable = stream.Readable;
-
-  function MyReadable(){
-    Readable.call(this, {objectMode: true});
-  }
-
-  util.inherits(MyReadable, Readable);
-
-  MyReadable.prototype._read = function(){
-    this.push({name: "Abhi"});
-  };
-
-  var rs1 = new MyReadable();
-
-  rs1.pipe(pipes.BasicWrite);
-
-  setInterval(function(){
-    rs1._read();
-  }, 2000);
-  **/
-
   rs.pipe(new SeparatorChunker({
         separator : '\n',
         flushTail : false
       }))
-      .pipe(pipes.Trimmer)
-      .pipe(pipes.PatternSplit)
-      .pipe(pipes.BasicWrite);
+      .pipe(new pipes.TrimMe())
+      .pipe(new pipes.Split(/\t{1,}/))
+      .pipe(new pipes.MovieFilter())
+      .pipe(new pipes.Batcher(10))
+      .pipe(new pipes.MovieDbBatchWriter());
 })();
