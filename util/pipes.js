@@ -4,6 +4,7 @@
   var Transform = require('stream').Transform;
   var Writable = require('stream').Writable;
   var inherits = require('util').inherits;
+  var db = require('../models/database');
 
   /**
    * Trimmer : Trims the string present in the
@@ -103,7 +104,7 @@
 
     var yearStr = row[1];
     if(yearStr.indexOf('?') != -1 || yearStr.indexOf('-') != -1) {
-      row[1] = '';
+      row[1] = null;
     }
 
     // level three: Remove the ones wth sitcom
@@ -119,7 +120,7 @@
         return done();
       }
     }
-    done(null, row);
+    done(null, {title: row[0], year: row[1]});
   };
 
   /**
@@ -179,8 +180,16 @@
 
   MovieDbBatchWriter.prototype._write = function(batch, enc, done) {
     // write to the database here.
-    console.log(batch);
-    //done();
+
+    db.addMovies(batch)
+        .then(function(){
+          console.log('added a batch of movies in the system');
+          done();
+        })
+        .catch(function(err){
+          console.log('oops !! something went really bad.');
+          done(err);
+        });
   };
 
   module.exports = {

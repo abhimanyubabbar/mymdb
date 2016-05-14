@@ -8,7 +8,7 @@
   var SeparatorChunker = require('chunking-streams').SeparatorChunker;
 
 
-  var rs = fs.createReadStream('../resources/movies-extract.list',
+  var rs = fs.createReadStream('../resources/movies-copy.list',
      {encoding: 'utf-8'});
 
   rs.pipe(new SeparatorChunker({
@@ -18,6 +18,6 @@
       .pipe(new pipes.TrimMe())
       .pipe(new pipes.Split(/\t{1,}/))
       .pipe(new pipes.MovieFilter())
-      .pipe(new pipes.Batcher(10))
+      .pipe(new pipes.Batcher(10000))
       .pipe(new pipes.MovieDbBatchWriter());
 })();
