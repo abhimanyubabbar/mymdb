@@ -183,11 +183,9 @@
 
     db.addMovies(batch)
         .then(function(){
-          console.log('added a batch of movies in the system');
           done();
         })
         .catch(function(err){
-          console.log('oops !! something went really bad.');
           done(err);
         });
   };

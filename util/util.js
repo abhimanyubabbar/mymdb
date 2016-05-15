@@ -4,13 +4,16 @@
 
   var db = require('../models/database');
   var file = require('../models/fileProcess');
+  var fs = require('fs');
   var Q = require('q');
+  var SeparatorChunker = require('chunking-streams').SeparatorChunker;
+  var pipes = require('./pipes');
 
   var bunyan = require('bunyan');
   var logger = bunyan.createLogger({name:"util"});
 
   // back-pressure.
-  var bufferCount = 5000;
+  var bufferCount = 50;
   var buffer= [];
   var dataPushed = false;
 
@@ -101,7 +104,41 @@
     return deferred.promise;
   }
 
+  /**
+   * dataStore : init the datastore for the service
+   * in the system.
+   *
+   * @param location
+   */
+  function dataStore(location) {
+
+    logger.debug('Started creating a data store.' + location);
+
+    var deferred = Q.defer();
+    var rs = fs.createReadStream(location, {encoding:'utf8'});
+
+    // TO DO : Add a separate destroy function to
+    // properly close and release all the resources.
+    rs.pipe(new SeparatorChunker({
+        separator : '\n',
+        flushTail : false
+      }))
+        .pipe(new pipes.TrimMe())
+        .pipe(new pipes.Split(/\t{1,}/))
+        .pipe(new pipes.MovieFilter())
+        .pipe(new pipes.Batcher(bufferCount))
+        .pipe(new pipes.MovieDbBatchWriter())
+        .on('finish', function(){
+          deferred.resolve('finished loading the movies information.');
+        })
+        .on('error', function(err){
+          deferred.reject(err);
+        });
+
+    return deferred.promise;
+  }
+
   module.exports = {
-    initDataStore : initDataStore
+    dataStore : dataStore
   };
 })();
