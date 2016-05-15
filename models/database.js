@@ -41,6 +41,7 @@
    */
   function init() {
 
+    logger.debug('received a request to initialize the database.');
     var deferred = Q.defer();
 
     pg.connect(connectionString, function (err, client, done) {

@@ -3,158 +3,199 @@
 
   var Transform = require('stream').Transform;
   var Writable = require('stream').Writable;
-  var util = require('util');
-
+  var inherits = require('util').inherits;
+  var db = require('../models/database');
 
   /**
+   * Trimmer : Trims the string present in the
+   * stream.
    *
    * @param options
-   * @returns {Trimmer}
    * @constructor
    */
-  function Trimmer(options){
-    if(!this instanceof Trimmer){
-      return new Trimmer(options);
-    }
 
-    if(!options) options={};
-    options.decodeStrings = false;
+  function Trimmer(options) {
+
+    if (!options) {
+      options = {};
+      options.objectMode = true;
+    }
 
     Transform.call(this, options);
   }
 
-  util.inherits(Trimmer, Transform);
+  inherits(Trimmer, Transform);
 
-  /**
-   *
-   * @param line
-   * @param enc
-   * @param done
-   * @private
-   */
-  Trimmer.prototype._transform = function(line, enc, done){
-    this.push(line.toString().trim());
+  Trimmer.prototype._transform = function (chunk, enc, done) {
+    this.push(chunk.toString().trim());
     done();
   };
 
 
   /**
-   *
-   * @param options
-   * @returns {Splitter2}
-   * @constructor
-   */
-  function Splitter2(options) {
-
-    if (!this instanceof Splitter2) {
-      return new Splitter2(options);
-    }
-
-    if (!options) options = {};
-    options.decodeStrings= false;
-
-    Transform.call(this, options);
-  }
-
-  util.inherits(Splitter2, Transform);
-
-  /**
-   *
-   * @param line
-   * @param enc
-   * @param cb
-   * @private
-   */
-  Splitter2.prototype._transform = function (line, enc, cb) {
-
-    var moreFragments = line.toString().split('\n');
-
-    if(moreFragments){
-      for(var i=0; i < moreFragments.length; i ++){
-        this.push(moreFragments[i]);
-      }
-      cb();
-    } else {
-      cb(null, line);
-    }
-  };
-
-  /**
+   * RegexSplit : Split the string based on the
+   * pattern provided.
    *
    * @param pattern
    * @param options
    * @constructor
    */
-  function PatternSplit(pattern, options) {
+  function RegexSplit(pattern, options) {
 
-    if (!this instanceof PatternSplit){
-      return new PatternSplit(options);
+    this.pattern = pattern;
+
+    if (!options) {
+      options = {
+        decodeStrings: false,
+        objectMode: true
+      }
     }
 
-    if(!options) options = {};
-    options.objectMode = true;
-    options.highWaterMark = true;
-
-    Transform.call(this,pattern, options);
+    Transform.call(this, options);
   }
 
-  util.inherits(PatternSplit, Transform);
+  inherits(RegexSplit, Transform);
+
+  RegexSplit.prototype._transform = function (chunk, enc, done) {
+
+    if (!(chunk instanceof String)) {
+      chunk = chunk.toString()
+    }
+
+    this.push(chunk.split(this.pattern));
+    done();
+  };
+
 
   /**
+   * MovieFiltering : Implement the internal logic
+   * for extracting legible movie information.
    *
-   * @param line
+   * @param options
+   * @constructor
+   */
+  function MovieFilter(options){
+
+    if(!options) {
+      options = {
+        objectMode: true
+      }
+    }
+
+    Transform.call(this, options);
+  }
+
+  inherits(MovieFilter, Transform);
+
+  /**
+   * _transform : special movie filtering of legible movie
+   * information from the
+   *
+   * @param row
    * @param enc
    * @param done
    * @private
    */
-  PatternSplit.prototype._transform = function(line, enc, done){
+  MovieFilter.prototype._transform = function(row, enc, done){
 
-    // This will fail in case writer is stdout which is writing
-    // to the process using in strings and therefore you cannot push an object to it.
-    var row = line.toString().split(this.pattern);
-    console.log({data:row});
-    this.push({data : 'abhi'});
-    done();
+    if(row.length < 2){
+      return done();
+    }
+
+    var yearStr = row[1];
+    if(yearStr.indexOf('?') != -1 || yearStr.indexOf('-') != -1) {
+      row[1] = null;
+    }
+
+    // level three: Remove the ones wth sitcom
+    // episode.
+    var episodeStr = row[0];
+    var sitcom = episodeStr.match(/\{(.*)\}/i); // {episode #1} <- remove it.
+
+    if(sitcom) {
+      // need to check for the episode.
+      // strings [{#1.4}, {1992-10-01}] should be avoided.
+      var extract = sitcom[1];
+      if (extract.indexOf('#') != -1 || extract.indexOf('-') != -1) {
+        return done();
+      }
+    }
+    done(null, {title: row[0], year: row[1]});
   };
 
   /**
+   * Batcher: Based on the size supplied,
+   * it collects and batches the information supplied to
+   * from the base stream.
    *
+   * @param batchSize
    * @param options
-   * @returns {ObjectWrite}
    * @constructor
    */
-  function ObjectWrite(options){
+  function Batcher(batchSize, options) {
 
-    if (!(this instanceof ObjectWrite)){
-      return new ObjectWrite(options);
+    this.buffer =[];
+    this.batchSize = batchSize;
+
+    if(!options){
+      options = {
+        objectMode : true
+      }
+    }
+    Transform.call(this, options);
+  }
+
+  inherits(Batcher, Transform);
+
+  Batcher.prototype._transform = function(row, enc, done) {
+
+    this.buffer.push(row);
+
+    if(this.buffer.length >= this.batchSize) {
+      this.push(this.buffer);
+      this.buffer = [];
     }
 
-    if (!options){
-      options = {};
-      options.objectMode = true;
+    done();
+  };
+
+
+  /**
+   * DBWriter : Writes a batch of movie entries in the system.
+   * @param options
+   * @constructor
+   */
+  function MovieDbBatchWriter(options) {
+
+    if(!options){
+      options = {
+        objectMode: true
+      }
     }
 
     Writable.call(this, options);
   }
 
-  util.inherits(ObjectWrite, Writable);
+  inherits(MovieDbBatchWriter, Writable);
 
-  /**
-   *
-   * @param data
-   * @param enc
-   * @param done
-   * @private
-   */
-  ObjectWrite.prototype._write = function(data, enc, done){
-    console.log(data);
-    done()
+  MovieDbBatchWriter.prototype._write = function(batch, enc, done) {
+    // write to the database here.
+
+    db.addMovies(batch)
+        .then(function(){
+          done();
+        })
+        .catch(function(err){
+          done(err);
+        });
   };
 
   module.exports = {
-    Trimmer: new Trimmer(),
-    Splitter2: new Splitter2(),
-    PatternSplit: new PatternSplit(/\t{1,}/),
-    BasicWrite: new ObjectWrite()
-  };
+    TrimMe: Trimmer,
+    Split: RegexSplit,
+    MovieFilter: MovieFilter,
+    Batcher: Batcher,
+    MovieDbBatchWriter : MovieDbBatchWriter
+  }
+
 })();
