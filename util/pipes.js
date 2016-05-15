@@ -7,6 +7,9 @@
   var db = require('../models/database');
   var util = require('util').inherits;
 
+  var bunyan = require('bunyan');
+  var logger = bunyan.createLogger({name: 'pipes'});
+
   /**
    * Trimmer : Trims the string present in the
    * stream.
@@ -14,8 +17,7 @@
    * @param options
    * @constructor
    */
-
-  function Trimmer(options) {
+function Trimmer(options) {
 
     if (!options) {
       options = {};
@@ -79,7 +81,7 @@
 
   RegexSplit.prototype._transform = function (chunk, enc, done) {
 
-    if (!(chunk instanceof String)) {
+    if (!(typeof chunk === 'string')) {
       chunk = chunk.toString()
     }
 
@@ -211,12 +213,105 @@
         });
   };
 
+
+  /**
+   * CountryFilter : The filter applied for determining the country
+   * of the movie.
+   *
+   * @param options
+   * @constructor
+   */
+  function CountryFilter(options){
+
+    if (!options) {
+      options = {
+        objectMode : true
+      };
+    }
+
+    Transform.call(this, options);
+  }
+
+  inherits(CountryFilter, Transform);
+
+  /**
+   * Apply the transformation for the filtering the rows with the countries.
+   * @param row
+   * @param enc
+   * @param done
+   * @returns {*}
+   * @private
+   */
+  CountryFilter.prototype._transform = function(row, enc, done){
+
+    if (row.length < 2) {
+      return done();
+    }
+
+    var episodeStr = row[0];
+    var sitcom = episodeStr.match(/\{(.*)\}/i); // {episode #1} <- remove it.
+
+    if (sitcom) {
+      // need to check for the episode.
+      // strings [{#1.4}, {1992-10-01}] should be avoided.
+      var extract = sitcom[1];
+      if (extract.indexOf('#') != -1 || extract.indexOf('-') != -1) {
+        return done();
+      }
+    }
+    done(null, {title: row[0].trim(), country: row[1].trim()});
+  };
+
+
+  /**
+   * CountryDBBatchWriter : Writer which executes the
+   * updates to the db and adds country information to movies.
+   *
+   * @param options
+   * @constructor
+   */
+  function CountryDBBatchWriter(options) {
+
+    if(!options) {
+      options = {
+        objectMode : true
+      };
+    }
+
+    Writable.call(this, options);
+  }
+
+  inherits(CountryDBBatchWriter, Writable);
+
+  /**
+   * Sink which updates the movies with the countries
+   * information.
+   *
+   * @param rows
+   * @param enc
+   * @param done
+   * @private
+   */
+  CountryDBBatchWriter.prototype._write = function(rows, enc, done) {
+
+    db.updateMoviesWithCountryInfo(rows)
+        .then(function(){
+          done();
+        })
+        .catch(function(err){
+          logger.error({err: err}, 'unable to update a batch in system.');
+          done(err);
+        })
+  };
+
   module.exports = {
     TrimMe: Trimmer,
     Split: RegexSplit,
     MovieFilter: MovieFilter,
     Batcher: Batcher,
-    MovieDbBatchWriter: MovieDbBatchWriter
+    MovieDbBatchWriter: MovieDbBatchWriter,
+    CountryDBBatchWriter: CountryDBBatchWriter,
+    CountryFilter: CountryFilter
   }
 
 })();
