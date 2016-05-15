@@ -126,6 +126,7 @@
         .pipe(new pipes.TrimMe())
         .pipe(new pipes.Split(/\t{1,}/))
         .pipe(new pipes.MovieFilter())
+        .pipe(new pipes.TrimMe()) //trim the individual properties.
         .pipe(new pipes.Batcher(bufferCount))
         .pipe(new pipes.MovieDbBatchWriter())
         .on('finish', function(){

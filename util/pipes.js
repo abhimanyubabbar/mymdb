@@ -5,6 +5,7 @@
   var Writable = require('stream').Writable;
   var inherits = require('util').inherits;
   var db = require('../models/database');
+  var util = require('util').inherits;
 
   /**
    * Trimmer : Trims the string present in the
@@ -27,7 +28,27 @@
   inherits(Trimmer, Transform);
 
   Trimmer.prototype._transform = function (chunk, enc, done) {
-    this.push(chunk.toString().trim());
+
+    if (Buffer.isBuffer(chunk)) {
+      // convert it to string and then push.
+      this.push(chunk.toString().trim());
+    } else if (chunk instanceof Object) {
+      var key;
+      for (key in chunk) {
+        if (chunk.hasOwnProperty(key)) {
+
+          // trim the string key values of the chunk.
+          if (chunk[key] instanceof String) {
+            chunk[key] = chunk[key].trim();
+          }
+        }
+      }
+      this.push(chunk);
+    } else {
+      // just push the trimmed chunk.
+      this.push(chunk.trim());
+    }
+    // finally inform the upstream about the same.
     done();
   };
 
@@ -74,9 +95,9 @@
    * @param options
    * @constructor
    */
-  function MovieFilter(options){
+  function MovieFilter(options) {
 
-    if(!options) {
+    if (!options) {
       options = {
         objectMode: true
       }
@@ -96,14 +117,14 @@
    * @param done
    * @private
    */
-  MovieFilter.prototype._transform = function(row, enc, done){
+  MovieFilter.prototype._transform = function (row, enc, done) {
 
-    if(row.length < 2){
+    if (row.length < 2) {
       return done();
     }
 
     var yearStr = row[1];
-    if(yearStr.indexOf('?') != -1 || yearStr.indexOf('-') != -1) {
+    if (yearStr.indexOf('?') != -1 || yearStr.indexOf('-') != -1) {
       row[1] = null;
     }
 
@@ -112,7 +133,7 @@
     var episodeStr = row[0];
     var sitcom = episodeStr.match(/\{(.*)\}/i); // {episode #1} <- remove it.
 
-    if(sitcom) {
+    if (sitcom) {
       // need to check for the episode.
       // strings [{#1.4}, {1992-10-01}] should be avoided.
       var extract = sitcom[1];
@@ -134,12 +155,12 @@
    */
   function Batcher(batchSize, options) {
 
-    this.buffer =[];
+    this.buffer = [];
     this.batchSize = batchSize;
 
-    if(!options){
+    if (!options) {
       options = {
-        objectMode : true
+        objectMode: true
       }
     }
     Transform.call(this, options);
@@ -147,11 +168,11 @@
 
   inherits(Batcher, Transform);
 
-  Batcher.prototype._transform = function(row, enc, done) {
+  Batcher.prototype._transform = function (row, enc, done) {
 
     this.buffer.push(row);
 
-    if(this.buffer.length >= this.batchSize) {
+    if (this.buffer.length >= this.batchSize) {
       this.push(this.buffer);
       this.buffer = [];
     }
@@ -167,7 +188,7 @@
    */
   function MovieDbBatchWriter(options) {
 
-    if(!options){
+    if (!options) {
       options = {
         objectMode: true
       }
@@ -178,14 +199,14 @@
 
   inherits(MovieDbBatchWriter, Writable);
 
-  MovieDbBatchWriter.prototype._write = function(batch, enc, done) {
+  MovieDbBatchWriter.prototype._write = function (batch, enc, done) {
     // write to the database here.
 
     db.addMovies(batch)
-        .then(function(){
+        .then(function () {
           done();
         })
-        .catch(function(err){
+        .catch(function (err) {
           done(err);
         });
   };
@@ -195,7 +216,7 @@
     Split: RegexSplit,
     MovieFilter: MovieFilter,
     Batcher: Batcher,
-    MovieDbBatchWriter : MovieDbBatchWriter
+    MovieDbBatchWriter: MovieDbBatchWriter
   }
 
 })();
