@@ -5,7 +5,7 @@
   var connectionString = "postgres://postgres:postgres@localhost/mymdb";
 
   var bunyan = require('bunyan');
-  var logger = bunyan.createLogger({name:"db"});
+  var logger = bunyan.createLogger({name:"movieDB"});
 
 
   var movieSchema = [
@@ -15,6 +15,7 @@
     "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), " +
     "title TEXT NOT NULL, " +
     "year INTEGER," +
+    "country TEXT," +
     "create_time TIMESTAMPTZ," +
     "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
@@ -24,7 +25,11 @@
     "year" +
     ")",
 
-    "CREATE INDEX idx_years ON movies(" +
+    "CREATE INDEX idx_movies_country ON movies(" +
+    "country" +
+    ")",
+
+    "CREATE INDEX idx_movies_years ON movies(" +
     "year" +
     ")",
 
@@ -216,11 +221,80 @@
     return deferred.promise;
   }
 
+
+  /**
+   * FIX ME : Move it to separate file info.
+   *
+   * addCountries : Update the movie information
+   * with corresponding country information.
+   *
+   * @param countriesInfo
+   */
+  function addCountries(countriesInfo) {
+
+    var deferred = Q.defer();
+    var responses = 0;
+
+    var statement = 'UPDATE movies SET country = $1, update_time = now() WHERE title = $2';
+
+    // TODO : extract rollback in a generic function.
+    var rollback = function(client, done) {
+
+      logger.error('an exception occurred, ' +
+          'will be rolling back the transaction.');
+
+      client.query('ROLLBACK', function(err){
+        return done(err);
+      });
+    };
+
+
+    pg.connect(connectionString, function(err, client, done) {
+
+      if (err) {
+        logger.error({err:err},'unable to create connection to the database.');
+        return deferred.reject(err);
+      }
+
+      logger.debug('started updating movies with countries information.');
+
+      client.query('BEGIN', function(err){
+        if(err) return rollback(client, done);
+      });
+
+      // for each country info, call the
+      // update statement.
+      countriesInfo.forEach(function(info){
+        client.query(statement, [info.country, info.title], function(err) {
+
+          if(err) {
+            logger.error(err);
+
+            // reject the promise and rollback the
+            // rollback the transaction.
+            deferred.reject(err);
+            rollback(client, done);
+          }
+
+          responses +=1;
+          if(responses == countriesInfo.length){
+            client.query('COMMIT', done);
+            return deferred.resolve('finished processing the batch.');
+          }
+
+        })
+      })
+    });
+
+    return deferred.promise;
+  }
+
   // export the main db interface
   // to be used by the front application.
   module.exports = {
     movieCount: movieCount,
     addMovies: addMovies,
+    updateMoviesWithCountryInfo: addCountries,
     init: init
   };
 })();

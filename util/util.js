@@ -1,4 +1,4 @@
-(function(){
+(function () {
 
   'use strict';
 
@@ -10,11 +10,11 @@
   var pipes = require('./pipes');
 
   var bunyan = require('bunyan');
-  var logger = bunyan.createLogger({name:"util"});
+  var logger = bunyan.createLogger({name: "util"});
 
   // back-pressure.
-  var bufferCount = 50;
-  var buffer= [];
+  var bufferCount = 5000;
+  var buffer = [];
   var dataPushed = false;
 
   /**
@@ -23,10 +23,10 @@
    *
    * @returns {*|promise}
    */
-  function initDataStore(location){
+  function initDataStore(location) {
 
     var deferred = Q.defer();
-    var readStream  = file.createObjectReadStream(location);
+    var readStream = file.createObjectReadStream(location);
 
     readStream.on('data', _dataHandler)
         .on('close', _closeHandler)
@@ -48,7 +48,7 @@
      * data stream.
      * @private
      */
-    function _closeHandler(){
+    function _closeHandler() {
       logger.debug('remaining count' + buffer.length);
       return deferred.resolve('data load complete');
     }
@@ -58,12 +58,12 @@
      * @param data
      * @private
      */
-    function _dataHandler(data){
+    function _dataHandler(data) {
 
       // FIX ME : This method is not bullet proof
       // as it requires entry count to be multiple of bufferCount.
       // Needs to handle the remaining data when we have
-      if(buffer.length >= bufferCount){
+      if (buffer.length >= bufferCount) {
 
         if (!dataPushed) {
 
@@ -79,17 +79,17 @@
           // add the information in the
           // application.
           db.addMovies(buffer)
-              .then(function(){
+              .then(function () {
                 // once current batch goes through,
                 // be ready to receive and push more data.
                 logger.debug('add movie batch successful, resuming the stream.');
                 readStream.resume();
                 dataPushed = false;
               })
-              .catch(function(err){
+              .catch(function (err) {
                 // fail in case any element in
                 // batch fails.
-                logger.error({err:err.toString()}, 'movie batch addition failed, error');
+                logger.error({err: err.toString()}, 'movie batch addition failed, error');
                 _errorHandler(err);
 
               });
@@ -112,33 +112,110 @@
    */
   function dataStore(location) {
 
-    logger.debug('Started creating a data store.' + location);
-
     var deferred = Q.defer();
-    var rs = fs.createReadStream(location, {encoding:'utf8'});
 
-    // TO DO : Add a separate destroy function to
-    // properly close and release all the resources.
-    rs.pipe(new SeparatorChunker({
-        separator : '\n',
-        flushTail : false
-      }))
-        .pipe(new pipes.TrimMe())
-        .pipe(new pipes.Split(/\t{1,}/))
-        .pipe(new pipes.MovieFilter())
-        .pipe(new pipes.Batcher(bufferCount))
-        .pipe(new pipes.MovieDbBatchWriter())
-        .on('finish', function(){
-          deferred.resolve('finished loading the movies information.');
+    _loadMovies(location.movies)
+        .then(function () {
+          logger.info('completed with loading of movies, moving to country loading.');
+          return _loadCountry(location.country);
         })
-        .on('error', function(err){
+        .then(function () {
+          logger.info('loaded the country information successfully');
+          deferred.resolve('information loaded successfully.');
+        })
+        .catch(function (err) {
           deferred.reject(err);
         });
 
     return deferred.promise;
   }
 
+
+  /**
+   * _loadMovies : Load the main movies information
+   * in the system.
+   *
+   * @param movieDumpLoc
+   * @returns {*|promise}
+   * @private
+   */
+  function _loadMovies(movieDumpLoc) {
+
+    var deferred = Q.defer();
+
+    var rs = fs.createReadStream(movieDumpLoc, {encoding: 'utf8'});
+
+    // TO DO : Add a separate destroy function to
+    // properly close and release all the resources.
+    rs.pipe(new SeparatorChunker({
+      separator: '\n',
+      flushTail: false
+    }))
+        .pipe(new pipes.TrimMe())
+        .pipe(new pipes.Split(/\t{1,}/))
+        .pipe(new pipes.MovieFilter())
+        .pipe(new pipes.TrimMe()) //trim the individual properties.
+        .pipe(new pipes.Batcher(bufferCount))
+        .pipe(new pipes.MovieDbBatchWriter())
+        .on('finish', function () {
+          deferred.resolve('finished loading the movies information.');
+        })
+        .on('error', function (err) {
+          deferred.reject(err);
+        });
+
+    return deferred.promise;
+  }
+
+
+  /**
+   * _loadCountry : Update the movies with the location of
+   * the country.
+   * @param countryDumpLoc
+   * @returns {*|promise}
+   * @private
+   */
+  function _loadCountry(countryDumpLoc) {
+
+    var deferred = Q.defer();
+
+    var rs = fs.createReadStream(countryDumpLoc, {encoding: 'utf8'});
+
+    // TO DO : Add a separate destroy function to
+    // properly close and release all the resources.
+    rs.pipe(new SeparatorChunker({
+      separator: '\n',
+      flushTail: false
+    }))
+        .pipe(new pipes.TrimMe())
+        .pipe(new pipes.Split(/\t{1,}/))
+        .pipe(new pipes.CountryFilter())
+        .pipe(new pipes.Batcher(bufferCount))
+        .pipe(new pipes.CountryDBBatchWriter())
+        .on('finish', function () {
+          deferred.resolve('finished loading the movies information.');
+        })
+        .on('error', function (err) {
+          deferred.reject(err);
+        });
+
+    return deferred.promise;
+  }
+
+
+  /**
+   * _loadRatings: Update the movie information with
+   * the ratings.
+   *
+   * @param ratingsDumpLoc
+   * @private
+   */
+  function _loadRatings(ratingsDumpLoc) {
+    throw new Error('function to be implemented.');
+  }
+
+
   module.exports = {
-    dataStore : dataStore
+    dataStore: dataStore
   };
 })();
