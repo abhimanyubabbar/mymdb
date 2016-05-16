@@ -13,7 +13,7 @@
   var logger = bunyan.createLogger({name: "util"});
 
   // back-pressure.
-  var bufferCount = 50;
+  var bufferCount = 5000;
   var buffer = [];
   var dataPushed = false;
 
@@ -116,9 +116,11 @@
 
     _loadMovies(location.movies)
         .then(function () {
+          logger.info('completed with loading of movies, moving to country loading.');
           return _loadCountry(location.country);
         })
         .then(function () {
+          logger.info('loaded the country information successfully');
           deferred.resolve('information loaded successfully.');
         })
         .catch(function (err) {
@@ -188,7 +190,7 @@
         .pipe(new pipes.TrimMe())
         .pipe(new pipes.Split(/\t{1,}/))
         .pipe(new pipes.CountryFilter())
-        .pipe(new pipes.Batcher(10))
+        .pipe(new pipes.Batcher(bufferCount))
         .pipe(new pipes.CountryDBBatchWriter())
         .on('finish', function () {
           deferred.resolve('finished loading the movies information.');

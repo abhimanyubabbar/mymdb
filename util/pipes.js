@@ -294,6 +294,7 @@ function Trimmer(options) {
    */
   CountryDBBatchWriter.prototype._write = function(rows, enc, done) {
 
+    console.log(rows);
     db.updateMoviesWithCountryInfo(rows)
         .then(function(){
           done();

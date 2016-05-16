@@ -17,7 +17,7 @@
     "year INTEGER," +
     "country TEXT," +
     "create_time TIMESTAMPTZ," +
-    "update_time TIMESTAMPTZ DEFAULT now()," +
+    "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
 
     "CREATE UNIQUE INDEX movies_title_year_unique ON movies(" +
@@ -29,7 +29,7 @@
     "country" +
     ")",
 
-    "CREATE INDEX idx_years ON movies(" +
+    "CREATE INDEX idx_movies_years ON movies(" +
     "year" +
     ")",
 
