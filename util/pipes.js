@@ -382,19 +382,49 @@ function Trimmer(options) {
     var baseSplit = chunk.split(/\ +/, 3);
 
     if(baseSplit.length != 3) {
+      done();
       return
     }
 
-    if (isNaN(baseSplit[0]) || isNaN(baseSplit[1])) {
+    if (isNaN(baseSplit[1]) || isNaN(baseSplit[2])) {
       done();
       return
     }
 
     var start = chunk.indexOf(baseSplit[2]);
-    var subStr = chunk.substr(start)
+    var subStr = chunk.substr(start);
+
+    //console.log("@subStr"+subStr);
+    var ratingSplit = subStr.split(/ (.+)?/);
+    if (ratingSplit.length < 2) {
+
+      done();
+      return;
+    }
+
+    var rating = parseFloat(ratingSplit[0]);
+    var title = ratingSplit[1].trim();
+
+    this.push({title: title, rating : rating});
+    done();
+  };
 
 
+  function ObjectWriter(options) {
+    if (!options){
+      options = {
+        objectMode : true
+      }
+    }
 
+    Writable.call(this, options);
+  }
+
+  inherits(ObjectWriter, Writable);
+
+  ObjectWriter.prototype._write = function(obj, enc, done){
+    console.log(obj);
+    done();
   };
 
   module.exports = {
@@ -406,7 +436,8 @@ function Trimmer(options) {
     CountryDBBatchWriter: CountryDBBatchWriter,
     CountryFilter: CountryFilter,
     RatingsDBBatchWriter : RatingsDBBatchWriter,
-    RatingsFilter : RatingsFilter
+    RatingsFilter : RatingsFilter,
+    ObjectWriter: ObjectWriter
   }
 
 })();
