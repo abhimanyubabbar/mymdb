@@ -16,6 +16,7 @@
     "title TEXT NOT NULL, " +
     "year INTEGER," +
     "country TEXT," +
+    "ratings DECIMAL," +
     "create_time TIMESTAMPTZ," +
     "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
@@ -27,6 +28,10 @@
 
     "CREATE INDEX idx_movies_country ON movies(" +
     "country" +
+    ")",
+
+    "CREATE INDEX idx_movies_ratings ON movies(" +
+    "ratings" +
     ")",
 
     "CREATE INDEX idx_movies_years ON movies(" +
@@ -289,12 +294,71 @@
     return deferred.promise;
   }
 
+
+  function addRatings(ratingsInfo){
+
+    var deferred = Q.defer();
+
+    var statement = 'UPDATE movies SET ratings = $1, update_time = now() WHERE title = $2';
+    var responses = 0;
+
+    function rollback(client, done) {
+      log.error('unable to update the ratings information, rolling back');
+      client.query('ROLLBACK', done);
+    }
+
+
+    pg.connect(connectionString, function(err, client, done){
+
+      if (err) {
+        log.error({error: err}, 'unable to create connection to database to update ratings');
+        deferred.reject(err);
+        return
+      }
+
+      // initiate the batch update in the system
+      client.query('BEGIN', function (err){
+        if (err) return rollback(client, done);
+      });
+
+      ratingsInfo.forEach(function(rating) {
+        client.query(statement, [rating.rating, rating.title], function(err){
+
+          if(err) {
+
+            // log the error
+            // and reject the promise.
+            logger.error(err);
+            deferred.reject(err);
+
+            // in addition to this, rollback the transaction.
+            rollback(client, done);
+            return
+          }
+
+          // capture successful responses to be
+          // which are helpful in determining whe the promise resolution
+          // needs to take place.
+          responses ++;
+          if (responses  == ratingsInfo.length){
+            client.query('COMMIT', done);
+            deferred.resolve('ratings information updated');
+          }
+        })
+      })
+
+    });
+
+    return deferred.promise;
+  }
+
   // export the main db interface
   // to be used by the front application.
   module.exports = {
     movieCount: movieCount,
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
+    updateMoviesWithRatingsInfo: addRatings,
     init: init
   };
 })();

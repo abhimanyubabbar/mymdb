@@ -41,7 +41,7 @@ app.get('/movies/count', function(req, resp){
 
   db.init()
       .then(function(){
-        logger.info('database up, initializing the datastore now ..');
+        logger.info('database up, initializing the data store now ..');
         return helper.dataStore(location)
       })
       .then(function(){
@@ -51,4 +51,4 @@ app.get('/movies/count', function(req, resp){
       .catch(function(err){
         logger.error({err:err},'unable to initialize thd database.');
       })
-})({movies: './resources/movies-copy.list', country : './resources/countries-copy.list'});
+})({movies: './resources/movies-copy.list', country : './resources/countries-copy.list', ratings: './resources/ratings-copy.list'});

@@ -261,8 +261,6 @@ function Trimmer(options) {
     }
     done(null, {title: row[0].trim(), country: row[1].trim()});
   };
-
-
   /**
    * CountryDBBatchWriter : Writer which executes the
    * updates to the db and adds country information to movies.
@@ -294,15 +292,109 @@ function Trimmer(options) {
    */
   CountryDBBatchWriter.prototype._write = function(rows, enc, done) {
 
-    console.log(rows);
     db.updateMoviesWithCountryInfo(rows)
         .then(function(){
           done();
         })
         .catch(function(err){
-          logger.error({err: err}, 'unable to update a batch in system.');
+          logger.error({err: err}, 'unable to update a countries batch in system.');
           done(err);
         })
+  };
+
+
+  /**
+   * RatingsDBBatchWriter : The writer for pushing the
+   * batched information in the database.
+   *
+   * @param options
+   * @constructor
+   */
+  function RatingsDBBatchWriter(options) {
+
+    if(!options) {
+      options = {
+        objectMode : true
+      }
+    }
+
+    Writable.call(this, options);
+  }
+
+  inherits(RatingsDBBatchWriter, Writable);
+
+  /**
+   * _write: perform the main db push.
+   * @param rows
+   * @param enc
+   * @param done
+   * @private
+   */
+  RatingsDBBatchWriter.prototype._write = function(rows, enc , done) {
+
+    db.updateMoviesWithRatingsInfo(rows)
+        .then(function(){
+          done();
+        })
+        .catch(function(err){
+          logger.error({err: err}, 'unable to update a ratings batch in system.');
+          done(err);
+        })
+
+  };
+
+
+  /**
+   * RatingsFilter : Filter the rows with valid ratings
+   * information and push the valid object to the listening
+   * pipe.
+   * @param options
+   * @constructor
+   */
+  function RatingsFilter(options){
+
+    if(!options) {
+      options = {
+        objectMode : true
+      }
+    }
+
+    Transform.call(this, options);
+  }
+
+  inherits(RatingsFilter, Transform);
+
+  /**
+   * _transform : Perform the main ratings transformation in
+   * the system.
+   *
+   * @param chunk
+   * @param enc
+   * @param done
+   * @private
+   */
+  RatingsFilter.prototype._transform = function(chunk, enc, done) {
+
+    if(!(typeof chunk == 'string')) {
+      chunk = chunk.toString()
+    }
+
+    var baseSplit = chunk.split(/\ +/, 3);
+
+    if(baseSplit.length != 3) {
+      return
+    }
+
+    if (isNaN(baseSplit[0]) || isNaN(baseSplit[1])) {
+      done();
+      return
+    }
+
+    var start = chunk.indexOf(baseSplit[2]);
+    var subStr = chunk.substr(start)
+
+
+
   };
 
   module.exports = {
@@ -312,7 +404,9 @@ function Trimmer(options) {
     Batcher: Batcher,
     MovieDbBatchWriter: MovieDbBatchWriter,
     CountryDBBatchWriter: CountryDBBatchWriter,
-    CountryFilter: CountryFilter
+    CountryFilter: CountryFilter,
+    RatingsDBBatchWriter : RatingsDBBatchWriter,
+    RatingsFilter : RatingsFilter
   }
 
 })();
