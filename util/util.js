@@ -120,7 +120,11 @@
           return _loadCountry(location.country);
         })
         .then(function () {
-          logger.info('loaded the country information successfully');
+          logger.info('loaded the country information successfully, moving to ratings');
+          return _loadRatings(location.ratings);
+        })
+        .then(function(){
+          logger.info('loaded the ratings information successfully, resolving the promise.');
           deferred.resolve('information loaded successfully.');
         })
         .catch(function (err) {
@@ -211,7 +215,27 @@
    * @private
    */
   function _loadRatings(ratingsDumpLoc) {
-    throw new Error('function to be implemented.');
+
+
+    var deferred = Q.defer();
+    var rs = fs.createReadStream(ratingsDumpLoc, {encoding:'utf8'});
+
+    rs.pipe(new SeparatorChunker({
+      separator: '\n',
+      flushTail: false
+    }))
+        .pipe(new pipes.TrimMe())
+        .pipe(new pipes.RatingsFilter())
+        .pipe(new pipes.Batcher(bufferCount))
+        .pipe(new pipes.RatingsDBBatchWriter())
+        .on('finish', function(){
+          deferred.resolve('finished loading the ratings information.')
+        })
+        .on('error', function(err){
+          deferred.reject(err);
+        });
+
+    return deferred.promise;
   }
 
 
