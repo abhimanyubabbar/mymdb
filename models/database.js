@@ -1,6 +1,7 @@
 (function () {
   // main database file script.
   var pg = require('pg');
+  var named = require('node-postgres-named');
   var Q = require('q');
   var connectionString = "postgres://postgres:postgres@localhost/mymdb";
 
@@ -352,6 +353,62 @@
     return deferred.promise;
   }
 
+  function moviesFilter(filter) {
+
+    logger.info('start fetching the movies based on filter.');
+
+    var deferred = Q.defer();
+    var rows = [];
+
+    var q = 'SELECT * FROM movies WHERE 1=1 ';
+
+    if(filter.title !== undefined) {
+      q += ' AND title like %$title% '
+    }
+
+    if(filter.year !== undefined) {
+      q += ' AND year = $year '
+    }
+
+    if(filter.country !== undefined) {
+      q += ' AND country = $country '
+    }
+
+    if(filter.min_rating !== undefined){
+      q += ' AND ratings >= $min_rating '
+    }
+
+    pg.connect(connectionString, function(err, client, done){
+
+      if(err){
+        logger.error('unable to get filtered movies');
+        deferred.reject(err);
+        return;
+      }
+
+      named.patch(client);
+
+      var query = client.query(q, {title: filter.title, country: filter.country, year: filter.year, min_rating: filter.min_rating});
+
+      query.on('row', function(row){
+        rows.push(row);
+      });
+
+      query.on('error', function(err){
+        return deferred.reject(err);
+      });
+
+      query.on('end', function(result){
+        console.log(result.rowCount);
+        done();
+        return deferred.resolve(rows);
+      });
+
+    });
+
+    return deferred.promise;
+  }
+
   // export the main db interface
   // to be used by the front application.
   module.exports = {
@@ -359,6 +416,7 @@
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,
+    moviesFilter : moviesFilter,
     init: init
   };
 })();
