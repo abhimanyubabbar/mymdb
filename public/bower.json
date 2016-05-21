@@ -1,0 +1,22 @@
+{
+  "name": "mymdb",
+  "homepage": "https://github.com/babbarshaer/mymdb",
+  "authors": [
+    "Abhimanyu Babbar <abhimanyu.babbar@wrapp.com>"
+  ],
+  "description": "movies database",
+  "main": "app.js",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "^1.5.5",
+    "bootstrap": "^3.3.6"
+  }
+}
