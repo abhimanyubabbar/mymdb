@@ -8,18 +8,35 @@
     var self = this;
     $log.debug('main-controller up ..');
 
-    function init () {
+    /**
+     * init : variables initialization.
+     * @param self
+     */
+    function init (self) {
 
-      MyMDBService.ping()
-          .then(function(data){
-            $log.debug('service seems to be running');
-            $log.debug(data);
-          })
-          .catch(function(err){
-            $log.error('whaaaaatt ??');
-          });
+      self.filter = {
+        min_rating: 0.0
+      };
+
+      self.filteredMovies = [];
     }
 
-    init();
+    /**
+     * fetch movies based on filtering params.
+     * @param params
+     */
+    self.getFilteredMovies = function(params) {
+
+      MyMDBService.filteredMovies(params)
+          .then(function (data) {
+            // assign the information to the filtered movies obj.
+            self.filteredMovies = data.movies;
+          })
+          .catch(function (err) {
+            console.log(err);
+          })
+    };
+
+    init(self);
   }
 })();

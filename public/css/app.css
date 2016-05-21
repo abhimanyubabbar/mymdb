@@ -1,9 +1,15 @@
 
 body {
-    font-family: 'Dosis', sans-serif;;
+    //font-family: 'Dosis', sans-serif;
+    font-family: 'Open Sans Condensed', sans-serif;
+    font-size: 2em;
 }
 
 
 .cursive-heading {
     font-family: 'Lobster', cursive;
+}
+
+.med-top-space {
+    margin-top: 60px;
 }

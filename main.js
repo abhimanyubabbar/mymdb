@@ -10,6 +10,7 @@ var logger = bunyan.createLogger({name:"main"});
 var app = express();
 var movieRoute = require('./server/movies-route');
 var mainRoute = require('./server/main-route');
+var healthRoute = require('./server/health-route');
 
 // Middleware.
 app.use(bodyParser.urlencoded({extended:false}));
@@ -20,6 +21,7 @@ app.use(express.static(__dirname + '/public'));
 
 // MyMdb API
 app.use('/', mainRoute);
+app.use('/health', healthRoute);
 app.use('/movies', movieRoute);
 
 (function(location){
