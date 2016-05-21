@@ -7,48 +7,42 @@ var bunyan = require('bunyan');
 var logger = bunyan.createLogger({name:"main"});
 
 var app = express();
+var movieRoute = require('./server/movies-route');
+var mainRoute = require('./server/main-route');
 
 // Middleware.
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 
-
 // MyMdb API
-
-// TODO : extract the api in a separate module.
-// TODO : /server/routes
-app.get('/ping', function(req, resp){
-  resp.send('{"application":"mymdb", "status":"pong"}');
-});
-
-app.get('/movies/count', function(req, resp){
-
-  logger.info('received a call to fetch the movies count');
-
-  db.movieCount()
-      .then(function( val){
-        resp.send('movie count:' + val);
-      }
-      , function(err){
-        console.log(err);
-        resp.send('unable to fulfill the request');
-      })
-});
+app.use('/', mainRoute);
+app.use('/movies', movieRoute);
 
 (function(location){
 
   logger.info('started with initializing the database.');
 
+  //db.init()
+   //   .then(function(){
+    //    logger.info('database up, initializing the data store now ..');
+   //     return helper.dataStore(location)
+   //   })
+   //   .then(function(){
+   //     logger.debug('data store initialized, creating server now ..');
+    //    app.listen(3000, function(){logger.info('server booted up.')});
+    //  })
+     // .catch(function(err){
+      //  logger.error({err:err},'unable to initialize thd database.');
+     // })
+
   db.init()
       .then(function(){
-        logger.info('database up, initializing the data store now ..');
-        return helper.dataStore(location)
+
+        logger.info('database up, booting the server');
+        app.listen(3000, function(){
+          logger.info('server booted up ...');
+        })
       })
-      .then(function(){
-        logger.debug('data store initialized, creating server now ..');
-        app.listen(3000, function(){logger.info('server booted up.')});
-      })
-      .catch(function(err){
-        logger.error({err:err},'unable to initialize thd database.');
-      })
+
+
 })({movies: './resources/movies-copy.list', country : './resources/countries-copy.list', ratings: './resources/ratings-copy.list'});
