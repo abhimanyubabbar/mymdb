@@ -5,81 +5,21 @@
     <title>Wrapp Movie Nights</title>
     <link href='https://fonts.googleapis.com/css?family=Lobster|Dosis|Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="./bower_components/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="./bower_components/angular-vidbg/dist/vidBg.css">
     <link rel="stylesheet" href="./css/app.css">
 </head>
-<body ng-controller="MainController as mainController">
-
-<div class="container">
-
-    <h1 class="cursive-heading" style="text-align: center">Wrappian Nights.</h1>
-
-    <div class="queryInput col-sm-offset-2 col-sm-8 med-top-space">
-
-        <form class="form-horizontal" ng-submit="mainController.getFilteredMovies(mainController.filter)">
-
-            <div class="form-group">
-                <label for="country" class="col-sm-2 control-label">Country</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="country" ng-model="mainController.filter.country">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="rating" class="col-sm-2 control-label">Min. Rating</label>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" id="rating" step="any" min="0"
-                           ng-model="mainController.filter.min_rating">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="year" class="col-sm-2 control-label">Year</label>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" id="year" ng-model="mainController.filter.year">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="col-sm-offset-2 col-sm-10">
-                    <button type="submit" class="btn btn-default">Submit</button>
-                </div>
-            </div>
-
-        </form>
-
-    </div>
-
-    <div class="result med-top-space col-sm-offset-2 col-sm-8" ng-show="mainController.filteredMovies.length">
-
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Year</th>
-                    <th>Minimum Rating</th>
-                    <th>Country</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr ng-repeat="movie in mainController.filteredMovies track by movie.id">
-                    <td>{{movie.title}}</td>
-                    <td>{{movie.year}}</td>
-                    <td>{{movie.ratings}}</td>
-                    <td>{{movie.country}}</td>
-                </tr>
-            </tbody>
-        </table>
-
-    </div>
-
-
+<body>
+<div class="container-fluid">
+    <div class="ng-view"></div>
 </div>
 
-
 <script src="./bower_components/angular/angular.js"></script>
+<script src="./bower_components/angular-route/angular-route.js"></script>
+<script src="./bower_components/lodash/lodash.js"></script>
+<script src="./bower_components/angular-vidbg/dist/vidBg.js"></script>
 <script src="./app.js"></script>
 <script src="./services.js"></script>
-<script src="./mainController.js"></script>
+<script src="controller/mainController.js"></script>
+<script src="controller/landingController.js"></script>
 </body>
 </html>

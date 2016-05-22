@@ -17,6 +17,9 @@
   ],
   "dependencies": {
     "angular": "^1.5.5",
-    "bootstrap": "^3.3.6"
+    "bootstrap": "^3.3.6",
+    "angular-vidbg": "angular-video-background#^0.0.12",
+    "lodash": "^4.12.0",
+    "angular-route": "^1.5.5"
   }
 }
