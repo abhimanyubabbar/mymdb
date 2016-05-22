@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var db = require('./models/database');
 var helper = require('./util/util');
+var path = require('path');
 
 var bunyan = require('bunyan');
 var logger = bunyan.createLogger({name:"main"});
@@ -9,13 +10,18 @@ var logger = bunyan.createLogger({name:"main"});
 var app = express();
 var movieRoute = require('./server/movies-route');
 var mainRoute = require('./server/main-route');
+var healthRoute = require('./server/health-route');
 
 // Middleware.
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 
+app.set("view options", {layout: false});
+app.use(express.static(__dirname + '/public'));
+
 // MyMdb API
 app.use('/', mainRoute);
+app.use('/health', healthRoute);
 app.use('/movies', movieRoute);
 
 (function(location){
