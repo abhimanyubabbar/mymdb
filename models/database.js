@@ -409,10 +409,54 @@
     return deferred.promise;
   }
 
+
+  /**
+   * topRatedN : find top rated movies in the system.
+   * @param count
+   * @returns {*|promise}
+   */
+  function topRatedN(count) {
+
+    if(!count) {
+      count = 50;
+    }
+
+    var deferred = Q.defer();
+    var topN = [];
+
+    var q = 'SELECT * FROM movies WHERE ratings IS NOT NULL order by ratings desc LIMIT $1';
+
+    pg.connect(connectionString, function(err, client, done) {
+
+      if(err) {
+        deferred.reject(err);
+      }
+
+      var query= client.query(q, [count]);
+
+      query.on('row', function(row){
+        topN.push(row);
+      });
+
+      query.on('error', function(err){
+        return deferred.reject(err);
+      });
+
+      query.on('end', function(){
+        done();
+        return deferred.resolve(topN);
+      });
+
+    });
+
+    return deferred.promise;
+  }
+
   // export the main db interface
   // to be used by the front application.
   module.exports = {
     movieCount: movieCount,
+    topRatedN: topRatedN,
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,
