@@ -8,9 +8,9 @@ var bunyan = require('bunyan');
 var logger = bunyan.createLogger({name:"main"});
 
 var app = express();
-var movieRoute = require('./server/movies-route');
-var mainRoute = require('./server/main-route');
-var healthRoute = require('./server/health-route');
+var movieRoute = require('./server/routes/movies-route');
+var mainRoute = require('./server/routes/main-route');
+var healthRoute = require('./server/routes/health-route');
 
 // Middleware.
 app.use(bodyParser.urlencoded({extended:false}));

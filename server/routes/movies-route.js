@@ -3,10 +3,10 @@
 
   var express = require('express');
   var moviesRouter = express.Router();
-  var moviesDB = require('../models/database');
+  var moviesDB = require('../../models/database');
   var bunyan = require('bunyan');
   var logger = bunyan.createLogger({name:'movie-route'});
-  var database = require('../models/database');
+  var database = require('../../models/database');
 
   moviesRouter.get('/', function(req, res) {
 
@@ -34,6 +34,18 @@
         })
   });
 
+  moviesRouter.get('/topRated100', function(req, res){
+
+    moviesDB.topRatedN(100)
+        .then(function(rows){
+          res.status(200).json({movies: rows});
+        })
+        .catch(function(err){
+          logger.error({error: err});
+          res.status(500).json({error: 'Unable to fetch top rated 100 movies'});
+        })
+  });
 
   module.exports = moviesRouter;
+
 })();
