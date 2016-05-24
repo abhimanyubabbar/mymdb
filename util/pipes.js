@@ -378,7 +378,6 @@ function Trimmer(options) {
     if(!(typeof chunk == 'string')) {
       chunk = chunk.toString()
     }
-
     var baseSplit = chunk.split(/\ +/, 3);
 
     if(baseSplit.length != 3) {
@@ -394,7 +393,6 @@ function Trimmer(options) {
     var start = chunk.indexOf(baseSplit[2]);
     var subStr = chunk.substr(start);
 
-    //console.log("@subStr"+subStr);
     var ratingSplit = subStr.split(/ (.+)?/);
     if (ratingSplit.length < 2) {
 
@@ -402,10 +400,14 @@ function Trimmer(options) {
       return;
     }
 
+    // extract the vote information.
+    var votes = parseInt(baseSplit[1]);
+
+    // parse the rating and the title information.
     var rating = parseFloat(ratingSplit[0]);
     var title = ratingSplit[1].trim();
 
-    this.push({title: title, rating : rating});
+    this.push({title: title, rating: rating, votes: votes, popularity: (rating * votes) });
     done();
   };
 

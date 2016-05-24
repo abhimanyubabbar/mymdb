@@ -18,6 +18,7 @@
     "year INTEGER," +
     "country TEXT," +
     "ratings DECIMAL," +
+    "votes INTEGER DEFAULT 1, " +
     "create_time TIMESTAMPTZ," +
     "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
@@ -300,7 +301,7 @@
 
     var deferred = Q.defer();
 
-    var statement = 'UPDATE movies SET ratings = $1, update_time = now() WHERE title = $2';
+    var statement = 'UPDATE movies SET ratings = $1, votes =$2, popularity=$3, update_time = now() WHERE title = $4';
     var responses = 0;
 
     function rollback(client, done) {
@@ -323,7 +324,7 @@
       });
 
       ratingsInfo.forEach(function(rating) {
-        client.query(statement, [rating.rating, rating.title], function(err){
+        client.query(statement, [rating.rating, rating.votes, rating.popularity, rating.title], function(err){
 
           if(err) {
 
@@ -424,7 +425,7 @@
     var deferred = Q.defer();
     var topN = [];
 
-    var q = 'SELECT * FROM movies WHERE ratings IS NOT NULL order by ratings desc LIMIT $1';
+    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL order by popularity desc LIMIT $1';
 
     pg.connect(connectionString, function(err, client, done) {
 
@@ -452,11 +453,55 @@
     return deferred.promise;
   }
 
+  /**
+   * topRatedN : find top rated movies in the system.
+   * @param count
+   * @returns {*|promise}
+   * @param country
+   */
+  function topRatedNByCountry(count, country) {
+
+    if(!count) {
+      count = 50;
+    }
+
+    var deferred = Q.defer();
+    var topN = [];
+
+    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL AND country = $1 order by popularity desc LIMIT $2';
+
+    pg.connect(connectionString, function(err, client, done) {
+
+      if(err) {
+        deferred.reject(err);
+      }
+
+      var query= client.query(q, [country, count]);
+
+      query.on('row', function(row){
+        topN.push(row);
+      });
+
+      query.on('error', function(err){
+        return deferred.reject(err);
+      });
+
+      query.on('end', function(){
+        done();
+        return deferred.resolve(topN);
+      });
+
+    });
+
+    return deferred.promise;
+  }
+
   // export the main db interface
   // to be used by the front application.
   module.exports = {
     movieCount: movieCount,
     topRatedN: topRatedN,
+    topRatedNByCountry: topRatedNByCountry,
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,

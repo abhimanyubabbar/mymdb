@@ -46,6 +46,20 @@
         })
   });
 
+  moviesRouter.get('/topRated100ByCountry', function(req, res){
+
+    var country = req.query.country;
+
+    moviesDB.topRatedNByCountry(100, country)
+        .then(function(rows){
+          res.status(200).json({movies: rows});
+        })
+        .catch(function(err){
+          logger.error({error: err});
+          res.status(500).json({error: 'Unable to fetch top rated 100 movies'});
+        })
+  });
+
   module.exports = moviesRouter;
 
 })();
