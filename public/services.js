@@ -57,9 +57,37 @@
       return deferred.promise;
     }
 
+
+    /**
+     * topRatedByCountry : fetch the top rated movies based on the
+     * country filter.
+     *
+     * @param params
+     */
+    function topRatedByCountry(params) {
+
+      var deferred = $q.defer();
+
+      $http({
+        method: 'GET',
+        url: '/movies/topRated100ByCountry',
+        params: params
+      })
+          .then(function(response){
+            deferred.resolve(response.data)
+          })
+          .catch(function(err){
+            deferred.reject({error: 'unable to fetch top rated movies by country', reason: err})
+          });
+
+      return deferred.promise;
+
+    }
+
     return {
       ping : ping,
-      filteredMovies : filteredMovies
+      filteredMovies : filteredMovies,
+      topRatedByCountry: topRatedByCountry
     }
   }
 })();
