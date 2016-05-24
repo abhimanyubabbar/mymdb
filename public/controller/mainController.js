@@ -18,7 +18,10 @@
         min_rating: 0.0
       };
 
+      self.topRatedParams = {};
+
       self.filteredMovies = [];
+      self.topRatedMovies = [];
     }
 
     /**
@@ -33,6 +36,21 @@
             self.filteredMovies = data.movies;
           })
           .catch(function (err) {
+            console.log(err);
+          })
+    };
+
+    /**
+     * Get Me the top Rated movies in a particular country.
+     * @param params
+     */
+    self.getTopRatedMovies = function(params){
+
+      MyMDBService.topRatedByCountry(params)
+          .then(function(data){
+            self.topRatedMovies = data.movies;
+          })
+          .catch(function(err){
             console.log(err);
           })
     };
