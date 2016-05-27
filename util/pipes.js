@@ -182,6 +182,13 @@ function Trimmer(options) {
     done();
   };
 
+  Batcher.prototype._flush = function(cb) {
+
+    console.log('pushing the remaining buffer, with count: ' + this.buffer.length);
+    this.push(this.buffer);
+    cb();
+  };
+
 
   /**
    * DBWriter : Writes a batch of movie entries in the system.
@@ -332,6 +339,7 @@ function Trimmer(options) {
    */
   RatingsDBBatchWriter.prototype._write = function(rows, enc , done) {
 
+    console.log(rows);
     db.updateMoviesWithRatingsInfo(rows)
         .then(function(){
           done();
