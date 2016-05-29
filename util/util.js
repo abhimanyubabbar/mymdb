@@ -124,6 +124,10 @@
           return _loadRatings(location.ratings);
         })
         .then(function(){
+          logger.info('loaded the ratings information successfully, moving to loading genres');
+          return _loadGenres(location.genres);
+        })
+        .then(function(){
           logger.info('loaded the ratings information successfully, resolving the promise.');
           deferred.resolve('information loaded successfully.');
         })
@@ -238,6 +242,25 @@
     return deferred.promise;
   }
 
+
+  function _loadGenres(genresDumpLoc) {
+
+    var deferred = Q.defer();
+    var rs = fs.createReadStream(genresDumpLoc, {encoding:'utf8'});
+
+    rs.pipe(new SeparatorChunker({
+      separator : '\n',
+      flushTail : false
+    }))
+        .pipe(new pipes.TrimMe())
+        .pipe(new pipes.Split(/\t{1,}/))
+        .pipe(new pipes.GenreFilter())
+        .pipe(new pipes.Batcher(bufferCount))
+        .pipe(new pipes.GenreDBBatchWriter());
+
+
+    return deferred.promise;
+  }
 
   module.exports = {
     dataStore: dataStore

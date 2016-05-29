@@ -420,6 +420,81 @@ function Trimmer(options) {
   };
 
 
+  /**
+   *
+   * @param options
+   * @constructor
+   */
+  function GenreFilter(options) {
+
+    if (!options) {
+      options = {
+        objectMode : true
+      }
+    }
+
+    Transform.call(this, options);
+  }
+
+  inherits(GenreFilter, Transform);
+
+
+  /**
+   * _transform : Extract the genre information.
+   * @param row
+   * @param enc
+   * @param done
+   * @private
+   */
+  GenreFilter.prototype._transform = function(row, enc, done) {
+
+    if(row.length != 2){
+      return done();
+    }
+    this.push({title: row[0], genre: row[1]});
+    done();
+  };
+
+  /**
+   * GenreDBBatchWriter : Batch writer for
+   * pushing the genre information in the database.
+   *
+   * @param options
+   * @constructor
+   */
+  function GenreDBBatchWriter(options){
+    if(!options){
+      options = {
+        objectMode: true
+      }
+    }
+
+    Writable.call(this, options);
+  }
+
+  inherits(GenreDBBatchWriter, Writable);
+
+  /**
+   * _write : Batch the database write in the
+   * system.
+   * @param rows
+   * @param enc
+   * @param done
+   * @private
+   */
+  GenreDBBatchWriter.prototype._write = function(rows, enc, done) {
+
+    console.log("Pushing rows with count: " + rows.length);
+
+    db.updateMoviesWithGenreInfo(rows)
+        .then(function(){
+          done();
+        })
+        .catch(function(err){
+          done(err);
+        })
+  };
+
   function ObjectWriter(options) {
     if (!options){
       options = {
@@ -447,6 +522,8 @@ function Trimmer(options) {
     CountryFilter: CountryFilter,
     RatingsDBBatchWriter : RatingsDBBatchWriter,
     RatingsFilter : RatingsFilter,
+    GenreDBBatchWriter : GenreDBBatchWriter,
+    GenreFilter: GenreFilter,
     ObjectWriter: ObjectWriter
   }
 
