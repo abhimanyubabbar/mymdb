@@ -19,6 +19,7 @@
     "country TEXT," +
     "ratings DECIMAL," +
     "votes INTEGER DEFAULT 1, " +
+    "genre TEXT," +
     "create_time TIMESTAMPTZ," +
     "update_time TIMESTAMPTZ DEFAULT now()" +
     ")",
@@ -38,6 +39,10 @@
 
     "CREATE INDEX idx_movies_years ON movies(" +
     "year" +
+    ")",
+
+    "CREATE INDEX idx_movies_genre ON movies(" +
+    "genre" +
     ")",
 
     "CREATE UNIQUE INDEX movies_title_unique ON movies(" +
@@ -354,6 +359,61 @@
     return deferred.promise;
   }
 
+
+  /**
+   * addGenre : Add the genre information to the
+   * movies in the system.
+   *
+   * @param genreInfo
+   * @returns {*}
+   */
+  function addGenres(genreInfo) {
+
+    var deferred = Q.defer();
+    var statement = 'UPDATE movies SET genre = $1 WHERE title = $2';
+    var responses = 0;
+
+    function rollback(client, done){
+      client.query('ROLLBACK', done);
+    }
+
+    pg.connect(connectionString, function(err,client, done) {
+
+      if (err) {
+        logger.error({error: err}, 'unable to create connection to the database.');
+        deferred.reject('Unable to create connection to DB, reason: ' + err.String());
+        return
+      }
+
+      // initiate the batch update in the system
+      client.query('BEGIN', function (err){
+        if (err) return rollback(client, done);
+      });
+
+      genreInfo.forEach(function(genre){
+
+        client.query(statement, [genre.genre, genre.title], function(err){
+
+          if (err) {
+            deferred.reject('Unable to push in a new entry in the system:' + err.String());
+            return rollback(client, done);
+          }
+
+          responses++;
+          if (responses == genreInfo.length){
+            client.query('COMMIT', done);
+            deferred.resolve('updated the genre information batch.');
+          }
+
+        });
+      });
+
+    });
+
+    return deferred.promise;
+  }
+
+
   function moviesFilter(filter) {
 
     logger.info('start fetching the movies based on filter.');
@@ -505,6 +565,7 @@
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,
+    updateMoviesWithGenreInfo: addGenres,
     moviesFilter : moviesFilter,
     init: init
   };
