@@ -8,7 +8,7 @@
   var SeparatorChunker = require('chunking-streams').SeparatorChunker;
 
 
-  var rs = fs.createReadStream('../resources/ratings-copy.list',
+  var rs = fs.createReadStream('../resources/ratings-test.list',
      {encoding: 'utf-8'});
 
   var writer = rs.pipe(new SeparatorChunker({
@@ -18,6 +18,9 @@
       .pipe(new pipes.TrimMe())
       .pipe(new pipes.RatingsFilter())
       .pipe(new pipes.Batcher(5000))
+      .on('end', function(){
+        console.log('received an end event in the system.' + this.buffer.length);
+      })
       .pipe(new pipes.RatingsDBBatchWriter())
       .on('error', function(err){
         rs.destroy();
