@@ -44,7 +44,7 @@
 
       $http({
         method: 'GET',
-        url: '/movies',
+        url: '/movies/query',
         params: params
       })
           .then(function(response){

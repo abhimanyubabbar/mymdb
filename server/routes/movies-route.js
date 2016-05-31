@@ -8,7 +8,7 @@
   var logger = bunyan.createLogger({name:'movie-route'});
   var database = require('../../models/database');
 
-  moviesRouter.get('/', function(req, res) {
+  moviesRouter.get('/query', function(req, res) {
 
     logger.info('call to fetch the filtered movies');
 

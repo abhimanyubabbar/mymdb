@@ -26,8 +26,6 @@ app.use('/movies', movieRoute);
 
 (function (location) {
 
-  logger.info('started with initializing the database.');
-
   //db.init()
   //   .then(function(){
   //    logger.info('database up, initializing the data store now ..');
