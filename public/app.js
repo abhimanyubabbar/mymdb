@@ -9,10 +9,16 @@
         // setup the basic routes in the system
         $routeProvider
             .when('/', {
-              templateUrl: './templates/landing.html'
+              templateUrl: 'templates/video.html'
             })
-            .when('/query', {
-              templateUrl: 'templates/query.html'
+            .when('/landing',{
+              templateUrl:'templates/landing.html'
+            })
+            .when('/rated-query', {
+              templateUrl: 'templates/top-rated-query.html'
+            })
+            .when('/fuzzy-query', {
+              templateUrl: 'templates/fuzzy-query.html'
             })
       }])
 

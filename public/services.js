@@ -44,7 +44,7 @@
 
       $http({
         method: 'GET',
-        url: '/movies',
+        url: '/movies/query',
         params: params
       })
           .then(function(response){
@@ -70,7 +70,7 @@
 
       $http({
         method: 'GET',
-        url: '/movies/topRated100ByCountry',
+        url: '/movies/topRated100',
         params: params
       })
           .then(function(response){

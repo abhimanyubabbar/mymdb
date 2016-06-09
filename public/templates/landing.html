@@ -1,11 +1,20 @@
-<div class="landing" ng-controller="LandingController as landingController">
+<div class="container">
 
-    <vid-bg resources="landingController.resources" poster="landingController.poster"
-            full-screen="landingController.fullScreen" muted="false" z-index="-100"
-            play-info="landingController.playInfo" pause-play="landingController.pausePlay" auto-play="false"></vid-bg>
+    <div class="row lg-top-space">
 
-    <div class="container">
-        <h1 class="cursive-heading" style="text-align: center"><a href="#/query" style="color: #FFFFFF">Wrappian Nights</a></h1>
+        <div class="col-sm-4 col-sm-offset-1 choice-tab">
+            <h1 style="text-align: center">
+                <i class="fa fa-search"></i>&nbsp;
+                <a class="default-hover inherit" href="#/rated-query">Rated Query</a>
+            </h1>
+        </div>
+
+        <div class="col-sm-4 col-sm-offset-1 choice-tab">
+            <h1 style="text-align: center"><i class="fa fa-paper-plane"></i> &nbsp;
+                <a class="default-hover inherit" href="#/fuzzy-query">Fuzzy Match</a>
+            </h1>
+        </div>
+
     </div>
 
 </div>

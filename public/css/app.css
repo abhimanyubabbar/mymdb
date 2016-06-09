@@ -13,3 +13,22 @@ body {
 .med-top-space {
     margin-top: 60px;
 }
+
+.lg-top-space {
+    margin-top: 300px;
+}
+
+.choice-tab {
+    min-height: 100px;
+    background-color: lightcoral;
+    border-radius: 5px;
+}
+
+a.default-hover:hover {
+    color:inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+a.inherit {
+    color: inherit;
+}

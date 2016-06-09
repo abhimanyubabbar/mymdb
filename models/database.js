@@ -6,7 +6,7 @@
   var connectionString = "postgres://postgres:postgres@localhost/mymdb";
 
   var bunyan = require('bunyan');
-  var logger = bunyan.createLogger({name:"movieDB"});
+  var logger = bunyan.createLogger({name: "movieDB"});
 
 
   var movieSchema = [
@@ -65,7 +65,7 @@
 
       if (err) {
         deferred.reject(err);
-        logger.log({err: err},'unable to connect to the database');
+        logger.log({err: err}, 'unable to connect to the database');
         return;
       }
 
@@ -93,7 +93,7 @@
         if (err) {
           if (err.toString().indexOf('already exists') == -1) {
             error = err;
-            logger.error({err : err},'unable to successfully execute statement');
+            logger.error({err: err}, 'unable to successfully execute statement');
           }
         }
 
@@ -131,45 +131,45 @@
     var responses = 0;
     var issue;
 
-    var rollback = function(client, done) {
+    var rollback = function (client, done) {
 
       logger.error('an exception occurred, ' +
           'will be rolling back the transaction.');
 
-      client.query('ROLLBACK', function(err){
+      client.query('ROLLBACK', function (err) {
         return done(err);
       });
     };
 
 
-    pg.connect(connectionString, function(err, client, done){
+    pg.connect(connectionString, function (err, client, done) {
 
       if (err) {
-        logger.error({err:err},'unable to create connection to the database.');
+        logger.error({err: err}, 'unable to create connection to the database.');
         return deferred.reject(err);
       }
 
       logger.debug('going to begin the transaction');
 
-      client.query('BEGIN', function(err){
-        if(err) return rollback(client, done);
+      client.query('BEGIN', function (err) {
+        if (err) return rollback(client, done);
       });
 
       // start executing query for each movie
       // in the array.
-      movies.forEach(function(movie){
+      movies.forEach(function (movie) {
 
-        client.query(statement, [movie.title, movie.year], function(err){
+        client.query(statement, [movie.title, movie.year], function (err) {
 
           // blocker preventing for any more
           // callbacks to be executed.
-          if(issue) return;
+          if (issue) return;
 
-          if(err) {
+          if (err) {
 
-            if(err.toString().indexOf('unique constraint') == -1) {
+            if (err.toString().indexOf('unique constraint') == -1) {
 
-              logger.error({err:err.toString()});
+              logger.error({err: err.toString()});
 
               // mark that an issue
               // has occurred which would prevent
@@ -183,9 +183,9 @@
             }
           }
 
-          responses +=1;
+          responses += 1;
 
-          if(responses == movies.length){
+          if (responses == movies.length) {
             // have received all the responses
             // and all of them are yayy ..!!
             client.query('COMMIT', done);
@@ -250,36 +250,36 @@
     var statement = 'UPDATE movies SET country = $1, update_time = now() WHERE title = $2';
 
     // TODO : extract rollback in a generic function.
-    var rollback = function(client, done) {
+    var rollback = function (client, done) {
 
       logger.error('an exception occurred, ' +
           'will be rolling back the transaction.');
 
-      client.query('ROLLBACK', function(err){
+      client.query('ROLLBACK', function (err) {
         return done(err);
       });
     };
 
 
-    pg.connect(connectionString, function(err, client, done) {
+    pg.connect(connectionString, function (err, client, done) {
 
       if (err) {
-        logger.error({err:err},'unable to create connection to the database.');
+        logger.error({err: err}, 'unable to create connection to the database.');
         return deferred.reject(err);
       }
 
       logger.debug('started updating movies with countries information.');
 
-      client.query('BEGIN', function(err){
-        if(err) return rollback(client, done);
+      client.query('BEGIN', function (err) {
+        if (err) return rollback(client, done);
       });
 
       // for each country info, call the
       // update statement.
-      countriesInfo.forEach(function(info){
-        client.query(statement, [info.country, info.title], function(err) {
+      countriesInfo.forEach(function (info) {
+        client.query(statement, [info.country, info.title], function (err) {
 
-          if(err) {
+          if (err) {
             logger.error(err);
 
             // reject the promise and rollback the
@@ -288,8 +288,8 @@
             rollback(client, done);
           }
 
-          responses +=1;
-          if(responses == countriesInfo.length){
+          responses += 1;
+          if (responses == countriesInfo.length) {
             client.query('COMMIT', done);
             return deferred.resolve('finished processing the batch.');
           }
@@ -302,7 +302,7 @@
   }
 
 
-  function addRatings(ratingsInfo){
+  function addRatings(ratingsInfo) {
 
     var deferred = Q.defer();
 
@@ -315,7 +315,7 @@
     }
 
 
-    pg.connect(connectionString, function(err, client, done){
+    pg.connect(connectionString, function (err, client, done) {
 
       if (err) {
         log.error({error: err}, 'unable to create connection to database to update ratings');
@@ -324,14 +324,14 @@
       }
 
       // initiate the batch update in the system
-      client.query('BEGIN', function (err){
+      client.query('BEGIN', function (err) {
         if (err) return rollback(client, done);
       });
 
-      ratingsInfo.forEach(function(rating) {
-        client.query(statement, [rating.rating, rating.votes, rating.popularity, rating.title], function(err){
+      ratingsInfo.forEach(function (rating) {
+        client.query(statement, [rating.rating, rating.votes, rating.popularity, rating.title], function (err) {
 
-          if(err) {
+          if (err) {
 
             // log the error
             // and reject the promise.
@@ -346,8 +346,8 @@
           // capture successful responses to be
           // which are helpful in determining whe the promise resolution
           // needs to take place.
-          responses ++;
-          if (responses  == ratingsInfo.length){
+          responses++;
+          if (responses == ratingsInfo.length) {
             client.query('COMMIT', done);
             deferred.resolve('ratings information updated');
           }
@@ -373,11 +373,11 @@
     var statement = 'UPDATE movies SET genre = $1 WHERE title = $2';
     var responses = 0;
 
-    function rollback(client, done){
+    function rollback(client, done) {
       client.query('ROLLBACK', done);
     }
 
-    pg.connect(connectionString, function(err,client, done) {
+    pg.connect(connectionString, function (err, client, done) {
 
       if (err) {
         logger.error({error: err}, 'unable to create connection to the database.');
@@ -386,13 +386,13 @@
       }
 
       // initiate the batch update in the system
-      client.query('BEGIN', function (err){
+      client.query('BEGIN', function (err) {
         if (err) return rollback(client, done);
       });
 
-      genreInfo.forEach(function(genre){
+      genreInfo.forEach(function (genre) {
 
-        client.query(statement, [genre.genre, genre.title], function(err){
+        client.query(statement, [genre.genre, genre.title], function (err) {
 
           if (err) {
             deferred.reject('Unable to push in a new entry in the system:' + err.String());
@@ -400,7 +400,7 @@
           }
 
           responses++;
-          if (responses == genreInfo.length){
+          if (responses == genreInfo.length) {
             client.query('COMMIT', done);
             deferred.resolve('updated the genre information batch.');
           }
@@ -423,25 +423,30 @@
 
     var q = 'SELECT * FROM movies WHERE 1=1 ';
 
-    if(filter.title !== undefined) {
-      q += ' AND title like %$title% '
+    if (filter.title !== undefined) {
+      q += ' AND title like $title';
+      filter.title = '%' + filter.title +'%'
     }
 
-    if(filter.year !== undefined) {
+    if (filter.year !== undefined) {
       q += ' AND year = $year '
     }
 
-    if(filter.country !== undefined) {
+    if (filter.country !== undefined) {
       q += ' AND country = $country '
     }
 
-    if(filter.min_rating !== undefined){
+    if (filter.min_rating !== undefined) {
       q += ' AND ratings >= $min_rating '
     }
 
-    pg.connect(connectionString, function(err, client, done){
+    if (filter.genre !== undefined) {
+      q += ' AND genre = $genre '
+    }
 
-      if(err){
+    pg.connect(connectionString, function (err, client, done) {
+
+      if (err) {
         logger.error('unable to get filtered movies');
         deferred.reject(err);
         return;
@@ -449,17 +454,22 @@
 
       named.patch(client);
 
-      var query = client.query(q, {title: filter.title, country: filter.country, year: filter.year, min_rating: filter.min_rating});
+      var query = client.query(q, {
+        title: filter.title,
+        country: filter.country, year: filter.year,
+        min_rating: filter.min_rating, genre: filter.genre
+      });
 
-      query.on('row', function(row){
+      query.on('row', function (row) {
         rows.push(row);
       });
 
-      query.on('error', function(err){
+      query.on('error', function (err) {
+        logger.error({error: err}, "Unable to fetch filtered movies");
         return deferred.reject(err);
       });
 
-      query.on('end', function(result){
+      query.on('end', function (result) {
         console.log(result.rowCount);
         done();
         return deferred.resolve(rows);
@@ -474,79 +484,59 @@
   /**
    * topRatedN : find top rated movies in the system.
    * @param count
+   * @param params
    * @returns {*|promise}
    */
-  function topRatedN(count) {
+  function topRatedN(count, params) {
 
-    if(!count) {
-      count = 50;
+    if (!count) {
+      count = 100;
     }
+
+    var q = 'SELECT * FROM movies WHERE 1=1 ';
+
+    if (params) {
+
+      if (params.country) {
+        q += ' AND country = $country '
+      }
+
+      if (params.genre){
+        q += ' AND genre = $genre '
+      }
+    } else {
+      params = {};
+    }
+
+    q += ' AND popularity IS NOT NULL ORDER BY popularity DESC LIMIT $limit';
 
     var deferred = Q.defer();
     var topN = [];
 
-    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL order by popularity desc LIMIT $1';
 
-    pg.connect(connectionString, function(err, client, done) {
+    pg.connect(connectionString, function (err, client, done) {
 
-      if(err) {
+      if (err) {
         deferred.reject(err);
       }
 
-      var query= client.query(q, [count]);
+      named.patch(client);
 
-      query.on('row', function(row){
+      var query = client.query(q, {
+        limit : count,
+        country : params.country,
+        genre : params.genre
+      });
+
+      query.on('row', function (row) {
         topN.push(row);
       });
 
-      query.on('error', function(err){
+      query.on('error', function (err) {
         return deferred.reject(err);
       });
 
-      query.on('end', function(){
-        done();
-        return deferred.resolve(topN);
-      });
-
-    });
-
-    return deferred.promise;
-  }
-
-  /**
-   * topRatedN : find top rated movies in the system.
-   * @param count
-   * @returns {*|promise}
-   * @param country
-   */
-  function topRatedNByCountry(count, country) {
-
-    if(!count) {
-      count = 50;
-    }
-
-    var deferred = Q.defer();
-    var topN = [];
-
-    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL AND country = $1 order by popularity desc LIMIT $2';
-
-    pg.connect(connectionString, function(err, client, done) {
-
-      if(err) {
-        deferred.reject(err);
-      }
-
-      var query= client.query(q, [country, count]);
-
-      query.on('row', function(row){
-        topN.push(row);
-      });
-
-      query.on('error', function(err){
-        return deferred.reject(err);
-      });
-
-      query.on('end', function(){
+      query.on('end', function () {
         done();
         return deferred.resolve(topN);
       });
@@ -561,12 +551,11 @@
   module.exports = {
     movieCount: movieCount,
     topRatedN: topRatedN,
-    topRatedNByCountry: topRatedNByCountry,
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,
     updateMoviesWithGenreInfo: addGenres,
-    moviesFilter : moviesFilter,
+    moviesFilter: moviesFilter,
     init: init
   };
 })();

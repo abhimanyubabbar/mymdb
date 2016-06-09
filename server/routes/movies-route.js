@@ -8,7 +8,7 @@
   var logger = bunyan.createLogger({name:'movie-route'});
   var database = require('../../models/database');
 
-  moviesRouter.get('/', function(req, res) {
+  moviesRouter.get('/query', function(req, res) {
 
     logger.info('call to fetch the filtered movies');
 
@@ -36,21 +36,7 @@
 
   moviesRouter.get('/topRated100', function(req, res){
 
-    moviesDB.topRatedN(100)
-        .then(function(rows){
-          res.status(200).json({movies: rows});
-        })
-        .catch(function(err){
-          logger.error({error: err});
-          res.status(500).json({error: 'Unable to fetch top rated 100 movies'});
-        })
-  });
-
-  moviesRouter.get('/topRated100ByCountry', function(req, res){
-
-    var country = req.query.country;
-
-    moviesDB.topRatedNByCountry(100, country)
+    moviesDB.topRatedN(100, req.query)
         .then(function(rows){
           res.status(200).json({movies: rows});
         })
@@ -61,5 +47,4 @@
   });
 
   module.exports = moviesRouter;
-
 })();
