@@ -484,18 +484,35 @@
   /**
    * topRatedN : find top rated movies in the system.
    * @param count
+   * @param params
    * @returns {*|promise}
    */
-  function topRatedN(count) {
+  function topRatedN(count, params) {
 
     if (!count) {
-      count = 50;
+      count = 100;
     }
+
+    var q = 'SELECT * FROM movies WHERE 1=1 ';
+
+    if (params) {
+
+      if (params.country) {
+        q += ' AND country = $country '
+      }
+
+      if (params.genre){
+        q += ' AND genre = $genre '
+      }
+    } else {
+      params = {};
+    }
+
+    q += ' AND popularity IS NOT NULL ORDER BY popularity DESC LIMIT $limit';
 
     var deferred = Q.defer();
     var topN = [];
 
-    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL order by popularity desc LIMIT $1';
 
     pg.connect(connectionString, function (err, client, done) {
 
@@ -503,50 +520,13 @@
         deferred.reject(err);
       }
 
-      var query = client.query(q, [count]);
+      named.patch(client);
 
-      query.on('row', function (row) {
-        topN.push(row);
+      var query = client.query(q, {
+        limit : count,
+        country : params.country,
+        genre : params.genre
       });
-
-      query.on('error', function (err) {
-        return deferred.reject(err);
-      });
-
-      query.on('end', function () {
-        done();
-        return deferred.resolve(topN);
-      });
-
-    });
-
-    return deferred.promise;
-  }
-
-  /**
-   * topRatedN : find top rated movies in the system.
-   * @param count
-   * @returns {*|promise}
-   * @param country
-   */
-  function topRatedNByCountry(count, country) {
-
-    if (!count) {
-      count = 50;
-    }
-
-    var deferred = Q.defer();
-    var topN = [];
-
-    var q = 'SELECT * FROM movies WHERE popularity IS NOT NULL AND country = $1 order by popularity desc LIMIT $2';
-
-    pg.connect(connectionString, function (err, client, done) {
-
-      if (err) {
-        deferred.reject(err);
-      }
-
-      var query = client.query(q, [country, count]);
 
       query.on('row', function (row) {
         topN.push(row);
@@ -571,7 +551,6 @@
   module.exports = {
     movieCount: movieCount,
     topRatedN: topRatedN,
-    topRatedNByCountry: topRatedNByCountry,
     addMovies: addMovies,
     updateMoviesWithCountryInfo: addCountries,
     updateMoviesWithRatingsInfo: addRatings,

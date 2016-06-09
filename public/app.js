@@ -15,7 +15,7 @@
               templateUrl:'templates/landing.html'
             })
             .when('/rated-query', {
-              templateUrl: 'templates/query.html'
+              templateUrl: 'templates/top-rated-query.html'
             })
             .when('/fuzzy-query', {
               templateUrl: 'templates/fuzzy-query.html'
